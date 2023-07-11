@@ -49,15 +49,15 @@ public:
 
 	BigInt& operator+=(const BigInt&);
 
-	BigInt operator++(int) const;
+	BigInt operator++(int);
 
-	BigInt& operator++() const;
+	BigInt& operator++();
 
 	friend BigInt& operator-(BigInt&, BigInt&);
 
 	BigInt& operator-=(const BigInt&);
 
-	BigInt operator--(int) const;
+	BigInt operator--(int);
 
 	BigInt& operator--();
 
@@ -82,6 +82,8 @@ public:
 	friend bool operator>(const BigInt&, const BigInt&);
 
 	/*explicit operator int() const;*/
+
+public:
 
 	size_t length() const;
 
@@ -116,7 +118,6 @@ private:
 	static char int2char(int);
 
 private:
-
 
 	bool is_positive;
 

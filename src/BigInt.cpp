@@ -66,28 +66,44 @@ BigInt BigInt::operator-() const {
 
 BigInt& operator+(const BigInt& lhs, const BigInt& rhs) {
 
-	auto num = BigInt(lhs);
+	
 
 	if (lhs.is_positive == rhs.is_positive) {
+
+		auto num = lhs;
+
 		num += rhs;
 
 		return num;
 	}
-	num -= rhs;
+	if (lhs.is_positive) {
+		auto num = lhs;
 
-	return lhs.is_positive ? num : -num;
+		num -= (-rhs);
+
+		return num;
+	}
+
+	auto num = rhs;
+
+	num -= (-lhs);
+
+	return num;
 }
 
 
-BigInt BigInt::operator++(int) const {
+BigInt BigInt::operator++(int) {
 
-	return BigInt("1", 1) + *this;
+	auto tmp = *this;
+	*this += BigInt("1", 1);
+
+	return tmp;
 }
 
 
-BigInt& BigInt::operator++() const {
-
-	return BigInt("1", 1) + *this;
+BigInt& BigInt::operator++() {
+	*this += BigInt("1", 1);
+	return *this;
 }
 
 
@@ -158,6 +174,7 @@ bool operator>(const BigInt& lhs, const BigInt& rhs) {
 }
 
 
+
 BigInt& BigInt::operator-=(const BigInt& rhs) {
 
 	minus(rhs);
@@ -166,9 +183,13 @@ BigInt& BigInt::operator-=(const BigInt& rhs) {
 }
 
 
-BigInt BigInt::operator--(int) const {
+BigInt BigInt::operator--(int) {
 
-	return *this + BigInt("-1", 2);
+	auto tmp = *this;
+
+	*this -= BigInt("1", 1);
+
+	return tmp;
 }
 
 
@@ -186,8 +207,12 @@ BigInt& BigInt::operator*=(const BigInt& rhs) {
 }
 
 BigInt& BigInt::operator/=(BigInt& rhs) {
-
-	divide(rhs);
+	try {
+		divide(rhs);
+	}
+	catch (const std::runtime_error& e) {
+		throw;
+	}
 
 	return *this;
 }
@@ -207,14 +232,14 @@ void BigInt::add(const BigInt& rhs) {
 		int digit2 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
 
 		auto value = digit1 + digit2 + carry;
-		carry = value > 10;
+		carry = value >= 10;
 
 		res.buffer[*p_iter] = int2char(carry ? value % 10 : value);
 
 		i--; j--;
 	}
 
-	res.is_positive = rhs.is_positive;
+	res.is_positive = is_positive;
 
 	*this = res;
 }
@@ -223,19 +248,26 @@ void BigInt::add(const BigInt& rhs) {
 void BigInt::minus(const BigInt& rhs) {
 
 	BigInt res = BigInt();
+	res.is_positive = check_same(*this, rhs, true) == kRhsBigger ? false : true;
+	
 
 	int carry = 0;
 	int i = kMaxLen - 1;
 	int j = kMaxLen - 1;
 	const int* p_iter = this->length() > rhs.length() ? &i : &j;
 
-	bool is_neg = false;
-
 	// 逐位相减
 	while (i >= kMaxLen - this->length() || j >= kMaxLen - rhs.length()) {
-		int digit1 = (i >= 0) ? char2int(buffer[i]) : 0;
-		int digit2 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
+		int digit1, digit2;
+		if (res.is_positive) {
+			digit1 = (i >= 0) ? char2int(buffer[i]) : 0;
+			digit2 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
 
+		}else {
+			digit2 = (i >= 0) ? char2int(buffer[i]) : 0;
+			digit1 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
+		}
+		 
 		// 处理借位
 		if (carry) {
 			digit1 -= 1;
@@ -253,11 +285,6 @@ void BigInt::minus(const BigInt& rhs) {
 		res.buffer[*p_iter] = int2char(diff);
 
 		i--; j--;
-	}
-
-	// 如果结果为负数，则加上负号
-	if (is_neg) {
-		res.is_positive = false;
 	}
 
 	*this = res;
@@ -291,21 +318,27 @@ void BigInt::mutiply(const BigInt& rhs) {
 
 void BigInt::divide(BigInt& rhs) {
 
+	if (rhs.length() == 0) {
+		throw std::runtime_error("DIVIDE ZERO");
+	}
+
 	BigInt quotient;
 	BigInt remain;
 
 	const auto lhs_len = length();
 	auto remain_idx = kMaxLen - 1;
 
-	while (remain_idx > kMaxLen - 1 - lhs_len) {
+	while (remain_idx >= kMaxLen - lhs_len) {
 
 		remain.buffer[remain_idx] = buffer[remain_idx];
 
 		while (check_same(remain, rhs, true) != kRhsBigger) {
-			remain = remain - rhs;
+			remain -= rhs;
 			quotient.buffer[kMaxLen - 1] += 1;
-
-			handle_carry(kMaxLen - 1, quotient);
+			for (int i = kMaxLen - 1; i >= kMaxLen - quotient.length(); -- i) {
+				handle_carry(i, quotient);	
+			}
+			
 		}
 		--remain_idx;
 	}
@@ -345,7 +378,6 @@ void BigInt::handle_carry(int current_index, BigInt& result) {
 		result.buffer[current_index] -= 10;
 
 		++result.buffer[current_index - 1];
-		--current_index;
 	}
 }
 
@@ -388,6 +420,7 @@ size_t BigInt::length() const {
 	return kMaxLen - count;
 }
 
+
 BigInt BigInt::get_max_big_int() {
 
 	auto max = BigInt();
@@ -429,9 +462,9 @@ bool BigInt::is_valid(const char* buffer, size_t length) {
 
 std::ostream& operator<<(std::ostream& os, const BigInt& big_int) {
 
-	os << (big_int.is_positive ? '\0' : '-');
-	size_t i;
-	for (i = BigInt::kMaxLen - big_int.length(); i < BigInt::kMaxLen; ++i) {
+	big_int.is_positive || os << "-";
+	
+	for (auto i = BigInt::kMaxLen - big_int.length(); i < BigInt::kMaxLen; ++i) {
 		os << big_int.buffer[i];
 	}
 	os << std::endl;
