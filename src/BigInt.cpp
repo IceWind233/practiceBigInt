@@ -5,7 +5,7 @@
 
 
 BigInt::BigInt()
-	: is_positive(true) {
+	: is_positive(true), is_nan_(false) {
 
 	buffer.fill(0);
 }
@@ -65,8 +65,6 @@ BigInt BigInt::operator-() const {
 
 
 BigInt& operator+(const BigInt& lhs, const BigInt& rhs) {
-
-	
 
 	if (lhs.is_positive == rhs.is_positive) {
 
@@ -194,8 +192,8 @@ BigInt BigInt::operator--(int) {
 
 
 BigInt& BigInt::operator--() {
-
-	return ((*this)--);
+	*this -= BigInt("1", 1);
+	return *this;
 }
 
 
@@ -249,7 +247,7 @@ void BigInt::minus(const BigInt& rhs) {
 
 	BigInt res = BigInt();
 	res.is_positive = check_same(*this, rhs, true) == kRhsBigger ? false : true;
-	
+
 
 	int carry = 0;
 	int i = kMaxLen - 1;
@@ -263,11 +261,12 @@ void BigInt::minus(const BigInt& rhs) {
 			digit1 = (i >= 0) ? char2int(buffer[i]) : 0;
 			digit2 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
 
-		}else {
+		}
+		else {
 			digit2 = (i >= 0) ? char2int(buffer[i]) : 0;
 			digit1 = (j >= 0) ? char2int(rhs.buffer[j]) : 0;
 		}
-		 
+
 		// ´¦Àí½èÎ»
 		if (carry) {
 			digit1 -= 1;
@@ -319,7 +318,9 @@ void BigInt::mutiply(const BigInt& rhs) {
 void BigInt::divide(BigInt& rhs) {
 
 	if (rhs.length() == 0) {
-		throw std::runtime_error("DIVIDE ZERO");
+		is_nan_ = true;
+
+		return;
 	}
 
 	BigInt quotient;
@@ -335,10 +336,10 @@ void BigInt::divide(BigInt& rhs) {
 		while (check_same(remain, rhs, true) != kRhsBigger) {
 			remain -= rhs;
 			quotient.buffer[kMaxLen - 1] += 1;
-			for (int i = kMaxLen - 1; i >= kMaxLen - quotient.length(); -- i) {
-				handle_carry(i, quotient);	
+			for (int i = kMaxLen - 1; i >= kMaxLen - quotient.length(); --i) {
+				handle_carry(i, quotient);
 			}
-			
+
 		}
 		--remain_idx;
 	}
@@ -462,8 +463,13 @@ bool BigInt::is_valid(const char* buffer, size_t length) {
 
 std::ostream& operator<<(std::ostream& os, const BigInt& big_int) {
 
+	if (big_int.is_nan_) {
+		os << "NaN";
+		return os;
+	}
+
 	big_int.is_positive || os << "-";
-	
+
 	for (auto i = BigInt::kMaxLen - big_int.length(); i < BigInt::kMaxLen; ++i) {
 		os << big_int.buffer[i];
 	}

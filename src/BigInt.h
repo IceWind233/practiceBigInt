@@ -118,8 +118,9 @@ private:
 	static char int2char(int);
 
 private:
-
 	bool is_positive;
+
+	bool is_nan_;
 
 	buffer_t buffer;
 };
