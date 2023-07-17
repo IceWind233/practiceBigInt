@@ -10,7 +10,7 @@ vector<T>::vector() :
 	array(nullptr) {}
 
 template <typename T>
-vector<T>::vector(size_t _num, T& _val) :
+vector<T>::vector(size_t _num, const T& _val) :
 	vector() {
 	for (auto i = 0; i < _num; ++i) {
 		push_back(_val);
@@ -138,19 +138,24 @@ size_t vector<T>::capacity() const {
 
 template <typename T>
 void vector<T>::push_back(const T& element) {
-	if (check_full()) {
-		reserve(2 * capacity());
-	}
+	emplace_back(element);
+}
 
-	array[size_++] = element;
+template <typename T>
+void vector<T>::push_back(T&& element) {
+
+	emplace_back(std::move(element));
 }
 
 template <typename T>
 template <typename ... Arg>
 void vector<T>::emplace_back(Arg&&... arg) {
-	T tmp(std::forward<Arg>(arg)...);
+	if (check_full()) {
+		reserve(2 * capacity());
+	}
 
-	push_back(tmp);
+	new (&array[size_]) T(std::forward<Arg>(arg)...);
+	++size_;
 }
 
 template <typename T>
@@ -242,7 +247,7 @@ typename vector<T>::iterator vector<T>::erase(iterator _first, iterator _last) {
 
 	size_ -= offset;
 
-	return _last;
+	return _last - offset;
 }
 
 template <typename T>
@@ -280,7 +285,7 @@ typename vector<T>::iterator vector<T>::insert(
 		*(current_pos + i) = *(_first + i);
 	}
 
-	return _last;
+	return begin() + _diff;
 }
 
 template <typename T>

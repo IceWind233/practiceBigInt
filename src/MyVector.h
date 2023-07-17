@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <vector>
 #include <xutility>
 
 
@@ -70,7 +71,7 @@ public:
 
 	explicit vector(size_t);
 
-	vector(size_t, T&);
+	vector(size_t, const T&);
 
 	vector(iterator, iterator);
 
@@ -115,6 +116,8 @@ public:
 
 	void push_back(const T&);
 
+	void push_back(T&&);
+
 	template <typename ...Arg>
 	void emplace_back(Arg&& ...arg);
 
@@ -148,6 +151,7 @@ public:
 
 	template<typename ...Arg>
 	iterator emplace(iterator, Arg&& ...arg);
+
 
 private:
 
