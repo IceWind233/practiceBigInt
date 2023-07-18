@@ -85,7 +85,7 @@ vector<T>& vector<T>::operator=(vector&& vector_ref) noexcept {
 template <typename T>
 vector<T>::~vector() {
 
-	free(array);
+	delete[] array;
 }
 
 template <typename T>
@@ -154,7 +154,7 @@ void vector<T>::emplace_back(Arg&&... arg) {
 		reserve(2 * capacity());
 	}
 
-	new (&array[size_]) T(std::forward<Arg>(arg)...);
+	array[size_] = T(std::forward<Arg>(arg)...);
 	++size_;
 }
 
@@ -173,13 +173,13 @@ void vector<T>::reserve(const size_t new_size) {
 
 	capacity_ = (new_size == 0 ? 1 : new_size);
 
-	auto new_array = static_cast<T*>
-		(malloc(capacity() * sizeof(T)));
+	auto *new_array = new T[capacity()];
 
 	if (array != nullptr) {
 		for (auto i = 0; i < size(); ++i) {
-			new_array[i] = std::move(array[i]);
+			new_array[i] = array[i];
 		}
+		delete[] array;
 	}
 
 	array = new_array;
@@ -202,7 +202,7 @@ template <typename T>
 void vector<T>::clear() {
 
 	free(array);
-	array = static_cast<T*>(malloc(capacity() * sizeof T));
+	array = new T[capacity()];
 	size_ = 0;
 }
 
@@ -241,7 +241,7 @@ typename vector<T>::iterator vector<T>::erase(iterator _first, iterator _last) {
 
 	auto offset = _last - _first;
 
-	for (auto it = _last; it != end(); ++it) {
+	for (auto &it = _last; it != end(); ++it) {
 		*(it - offset) = *it;
 	}
 

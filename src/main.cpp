@@ -343,7 +343,6 @@ TEST(VectorTest, InsertIteratorRange) {
     EXPECT_EQ(*it, 3);
 }
 
-/*
 TEST(VectorTest, EmplaceFunction) {
     vector<std::string> vec = { "Hello", "World" };
 
@@ -359,24 +358,20 @@ TEST(VectorTest, EmplaceFunction) {
     EXPECT_FALSE(vec.empty());
     EXPECT_EQ(*it, "Hi");
 }
-*/
 
-/*
 TEST(VectorTest, EmplaceBackFunction) {
     vector<std::string> vec;
-
     vec.emplace_back("Hello");
     EXPECT_EQ(vec.size(), 1);
     EXPECT_GE(vec.capacity(), 1);
     EXPECT_FALSE(vec.empty());
     EXPECT_EQ(vec.back(), "Hello");
-
     vec.emplace_back("World");
     EXPECT_EQ(vec.size(), 2);
     EXPECT_GE(vec.capacity(), 2);
     EXPECT_FALSE(vec.empty());
     EXPECT_EQ(vec.back(), "World");
-}*/
+}
 
 
 int main(int argc, char** argv) {
@@ -384,5 +379,5 @@ int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
     return RUN_ALL_TESTS();
-    
+
 }

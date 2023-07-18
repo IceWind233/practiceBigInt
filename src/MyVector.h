@@ -58,7 +58,7 @@ public:
 
 		bool operator>=(const iterator&) const;
 
-	private:
+	public:
 
 		T* ptr_;
 	};
