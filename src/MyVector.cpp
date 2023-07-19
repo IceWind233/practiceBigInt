@@ -62,22 +62,28 @@ vector<T>& vector<T>::operator=(vector& other) {
 template <typename T>
 vector<T>::vector(vector&& vector_ref) noexcept :
 	size_(vector_ref.size()),
-	capacity_(vector_ref.capacity()) {
+	capacity_(vector_ref.capacity()),
+	array(nullptr){
+	destroy_array();
 
 	array = vector_ref.array;
-	vector_ref.array = nullptr;
-}
-
-template <typename T>
-vector<T>& vector<T>::operator=(vector&& vector_ref) noexcept {
-	free(array);
-	array = vector_ref.array;
-	size_ = vector_ref.size();
-	capacity_ = vector_ref.capacity();
 
 	vector_ref.array = nullptr;
 	vector_ref.size_ = 0;
 	vector_ref.capacity_ = 0;
+}
+
+template <typename T>
+vector<T>& vector<T>::operator=(vector&& vector_ref) noexcept {
+	destroy_array();
+
+	array = vector_ref.array;
+	size_ = vector_ref.size();
+	capacity_ = vector_ref.capacity();
+
+	vector_ref.size_ = 0;
+	vector_ref.capacity_ = 0;
+	vector_ref.array = nullptr;
 
 	return *this;
 }
@@ -85,7 +91,10 @@ vector<T>& vector<T>::operator=(vector&& vector_ref) noexcept {
 template <typename T>
 vector<T>::~vector() {
 
-	delete[] array;
+	destroy_array();
+	size_ = 0;
+	capacity_ = 0;
+
 }
 
 template <typename T>
@@ -179,6 +188,7 @@ void vector<T>::reserve(const size_t new_size) {
 		for (auto i = 0; i < size(); ++i) {
 			new_array[i] = array[i];
 		}
+
 		delete[] array;
 	}
 
@@ -201,7 +211,8 @@ void vector<T>::resize(size_t new_size) {
 template <typename T>
 void vector<T>::clear() {
 
-	free(array);
+	destroy_array();
+
 	array = new T[capacity()];
 	size_ = 0;
 }
@@ -218,7 +229,7 @@ template <typename T>
 void vector<T>::assign(std::initializer_list<T> init) {
 
 	vector<T> _tmp(init);
-
+	
 	*this = std::move(_tmp);
 }
 
@@ -241,8 +252,12 @@ typename vector<T>::iterator vector<T>::erase(iterator _first, iterator _last) {
 
 	auto offset = _last - _first;
 
-	for (auto &it = _last; it != end(); ++it) {
+	auto it = _last;
+	while (it != end()) {
+
 		*(it - offset) = *it;
+
+		++it;
 	}
 
 	size_ -= offset;
@@ -275,14 +290,22 @@ typename vector<T>::iterator vector<T>::insert(
 
 	auto current_pos = begin() + _diff;
 
-	for (auto it = std::prev(end()); it != std::prev(current_pos); --it) {
+	auto it = std::prev(end());
+	while (it != std::prev(current_pos)) {
+
 		*(it + _offset) = *it;
+
+		--it;
 	}
 
 	size_ += _offset;
 
-	for (auto i = 0; i < _offset; ++i) {
+	auto i = 0;
+	while (i < _offset) {
+
 		*(current_pos + i) = *(_first + i);
+
+		++i;
 	}
 
 	return begin() + _diff;
@@ -330,13 +353,23 @@ bool vector<T>::check_full() const {
 }
 
 template <typename T>
-bool vector<T>::iterator::operator==(const iterator& other) const {
+void vector<T>::destroy_array() {
+	if (this->array != nullptr) {
+		delete[] array;
+		array = nullptr;
+	}
+}
+
+template <typename T>
+bool vector<T>::iterator::
+	operator==(const iterator& other) const {
 
 	return ptr_ == other.ptr_;
 }
 
 template <typename T>
-bool vector<T>::iterator::operator!=(const iterator& other) const {
+bool vector<T>::iterator::
+	operator!=(const iterator& other) const {
 
 	return !(*this == other);
 }
@@ -348,14 +381,16 @@ T& vector<T>::iterator::operator*() const {
 }
 
 template <typename T>
-typename vector<T>::iterator& vector<T>::iterator::operator++() {
+typename vector<T>::iterator& 
+	vector<T>::iterator::operator++() {
 	++ptr_;
 
 	return *this;
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::iterator::operator++(int) {
+typename vector<T>::iterator
+	vector<T>::iterator::operator++(int) {
 	iterator temp = *this;
 
 	++ptr_;
@@ -364,14 +399,16 @@ typename vector<T>::iterator vector<T>::iterator::operator++(int) {
 }
 
 template <typename T>
-typename vector<T>::iterator& vector<T>::iterator::operator--() {
+typename vector<T>::iterator& 
+	vector<T>::iterator::operator--() {
 	--ptr_;
 
 	return *this;
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::iterator::operator--(int) {
+typename vector<T>::iterator
+	vector<T>::iterator::operator--(int) {
 	iterator temp = *this;
 
 	--ptr_;
@@ -380,63 +417,73 @@ typename vector<T>::iterator vector<T>::iterator::operator--(int) {
 }
 
 template <typename T>
-typename vector<T>::iterator& vector<T>::iterator::operator+=(size_t n) {
+typename vector<T>::iterator& 
+	vector<T>::iterator::operator+=(size_t n) {
 	ptr_ += n;
 
 	return *this;
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::iterator::operator+(size_t n) const {
+typename vector<T>::iterator
+	vector<T>::iterator::operator+(size_t n) const {
 
 	return iterator(ptr_ + n);
 }
 
 template <typename T>
-typename vector<T>::iterator& vector<T>::iterator::operator-=(size_t n) {
+typename vector<T>::iterator& 
+	vector<T>::iterator::operator-=(size_t n) {
 	ptr_ -= n;
 
 	return *this;
 }
 
 template <typename T>
-typename vector<T>::iterator vector<T>::iterator::operator-(size_t n) const {
+typename vector<T>::iterator
+	vector<T>::iterator::operator-(size_t n) const {
 
 	return iterator(ptr_ - n);
 }
 
 template <typename T>
-size_t vector<T>::iterator::operator-(const iterator& other) const {
+size_t vector<T>::iterator::
+	operator-(const iterator& other) const {
 
 	return ptr_ - other.ptr_;
 }
 
 template <typename T>
-T& vector<T>::iterator::operator[](size_t n) const {
+T& vector<T>::iterator::
+	operator[](size_t n) const {
 
 	return *(ptr_ + n);
 }
 
 template <typename T>
-bool vector<T>::iterator::operator<(const iterator& other) const {
+bool vector<T>::iterator::
+	operator<(const iterator& other) const {
 
 	return ptr_ < other.ptr_;
 }
 
 template <typename T>
-bool vector<T>::iterator::operator>(const iterator& other) const {
+bool vector<T>::iterator::
+	operator>(const iterator& other) const {
 
 	return ptr_ > other.ptr_;
 }
 
 template <typename T>
-bool vector<T>::iterator::operator<=(const iterator& other) const {
+bool vector<T>::iterator::
+	operator<=(const iterator& other) const {
 
 	return ptr_ <= other.ptr_;
 }
 
 template <typename T>
-bool vector<T>::iterator::operator>=(const iterator& other) const {
+bool vector<T>::iterator::
+	operator>=(const iterator& other) const {
 
 	return ptr_ >= other.ptr_;
 }

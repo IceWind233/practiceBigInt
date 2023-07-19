@@ -58,7 +58,7 @@ public:
 
 		bool operator>=(const iterator&) const;
 
-	public:
+	private:
 
 		T* ptr_;
 	};
@@ -162,6 +162,8 @@ private:
 private:
 
 	bool check_full() const;
+
+	void destroy_array();
 
 };
 
