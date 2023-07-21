@@ -14,14 +14,7 @@
 
 int main(int argc, char** argv) {
 
-    std::unique_ptr<int> a = std::make_unique<int>(1);
-    std::cout << *a.release();
-    unique_ptr<int> aaa, b;
-
-    aaa = make_unique<int>(1);
-    b = make_unique<int>(2);
-    aaa.swap(b);
-    std::cout << aaa;
+	std::shared_ptr<int> a_share = std::make_shared<int>(1);
 
 
     return 0;
