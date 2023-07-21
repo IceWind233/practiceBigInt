@@ -5,6 +5,13 @@
 #include <cstddef>
 
 template<typename Ty>
+class weak_ptr;
+template<typename Ty>
+class shared_ptr;
+template<typename Ty>
+class unique_ptr;
+
+template<typename Ty>
 class unique_ptr {
 
 	typedef Ty* Ty_Ptr;
@@ -87,9 +94,15 @@ public:
 
 	explicit shared_ptr(Ty_Ptr _pointer);
 
+	explicit shared_ptr(unique_ptr<Ty> unique);
+
+	explicit shared_ptr(weak_ptr<Ty> weak);
+
 	shared_ptr(const shared_ptr& _other);
 
 	shared_ptr& operator=(const shared_ptr& _rhs);
+
+	shared_ptr& operator=(const unique_ptr<Ty>& _rhs);
 
 	shared_ptr(shared_ptr&& _ref) noexcept;
 
@@ -152,9 +165,15 @@ public:
 
 public:
 
-	void swap(weak_ptr& rhs);
+	void swap(weak_ptr& rhs) noexcept;
 
 	void reset();
+
+	size_t use_count() const;
+
+	bool expired();
+
+	shared_ptr<Ty>& lock();
 
 public:
 	Ty_Ptr ptr_;

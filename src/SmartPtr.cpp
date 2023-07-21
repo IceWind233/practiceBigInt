@@ -173,6 +173,21 @@ shared_ptr<Ty>::shared_ptr(Ty_Ptr _pointer) :
 }
 
 template <typename Ty>
+shared_ptr<Ty>::shared_ptr(unique_ptr<Ty> unique) :
+	shared_ptr(){
+	ptr_ = unique.get();
+	++(*count_);
+}
+
+template <typename Ty>
+shared_ptr<Ty>::shared_ptr(weak_ptr<Ty> weak) {
+	ptr_ = weak.ptr_;
+	count_ = weak.use_count();
+
+	++(*count_);
+}
+
+template <typename Ty>
 shared_ptr<Ty>::shared_ptr(const shared_ptr& _other) :
 	shared_ptr() {
 
@@ -188,6 +203,15 @@ shared_ptr<Ty>& shared_ptr<Ty>::
 	ptr_ = _rhs.ptr_;
 	count_ = _rhs.count_;
 	++(*count_);
+
+	return *this;
+}
+
+template <typename Ty>
+shared_ptr<Ty>& shared_ptr<Ty>::
+	operator=(const unique_ptr<Ty>& _rhs) {
+	shared_ptr tmp(_rhs);
+	*this = std::move(tmp);
 
 	return *this;
 }
@@ -218,6 +242,8 @@ shared_ptr<Ty>& shared_ptr<Ty>::
 
 	_ref.ptr_ = nullptr;
 	_ref.count_ = nullptr;
+
+	return *this;
 }
 
 template <typename Ty>
@@ -262,7 +288,7 @@ typename shared_ptr<Ty>::Ty_Ptr
 template <typename Ty>
 size_t shared_ptr<Ty>::use_count() const noexcept {
 
-	return *count_;
+	return count_ == nullptr ? 0 : *count_;
 }
 
 template <typename Ty>
@@ -358,4 +384,36 @@ template <typename Ty>
 weak_ptr<Ty>::~weak_ptr() {
 	ptr_ = nullptr;
 	count_ = nullptr;
+}
+
+template <typename Ty>
+void weak_ptr<Ty>::swap(weak_ptr& rhs) noexcept {
+	auto tmp = std::move(rhs);
+
+	rhs = std::move(*this);
+	*this = std::move(tmp);
+}
+
+template <typename Ty>
+void weak_ptr<Ty>::reset() {
+	ptr_ = nullptr;
+	count_ = nullptr;
+}
+
+template <typename Ty>
+size_t weak_ptr<Ty>::use_count() const {
+
+	return count_ == nullptr ? 0 : *count_;
+}
+
+template <typename Ty>
+bool weak_ptr<Ty>::expired() {
+
+	return use_count() == 0;
+}
+
+template <typename Ty>
+shared_ptr<Ty>& weak_ptr<Ty>::lock() {
+
+	return expired() ? shared_ptr<Ty>(nullptr) : shared_ptr<Ty>(*this);
 }
