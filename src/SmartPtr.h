@@ -86,6 +86,9 @@ class shared_ptr {
 
 	typedef Ty* Ty_Ptr;
 
+	template<typename Ty>
+	friend class weak_ptr;
+
 public:
 
 	constexpr shared_ptr() noexcept;
@@ -94,9 +97,9 @@ public:
 
 	explicit shared_ptr(Ty_Ptr _pointer);
 
-	explicit shared_ptr(unique_ptr<Ty> unique);
+	shared_ptr(unique_ptr<Ty>&& _unique);
 
-	explicit shared_ptr(weak_ptr<Ty> weak);
+	explicit shared_ptr(const weak_ptr<Ty>& _weak);
 
 	shared_ptr(const shared_ptr& _other);
 
@@ -134,8 +137,8 @@ public:
 
 private:
 
-	size_t* count_;
 	Ty* ptr_;
+	size_t* count_;
 
 };
 
@@ -147,6 +150,9 @@ class weak_ptr {
 
 	typedef Ty* Ty_Ptr;
 
+	template <typename Ty>
+	friend class shared_ptr;
+
 public:
 
 	constexpr weak_ptr() noexcept;
@@ -155,7 +161,7 @@ public:
 
 	weak_ptr& operator=(const weak_ptr& _other) noexcept;
 
-	explicit weak_ptr(const shared_ptr<Ty> shared_ptr) noexcept;
+	explicit weak_ptr(const shared_ptr<Ty>& _shared) noexcept;
 
 	weak_ptr& operator=(weak_ptr&& _ref) noexcept;
 
@@ -175,7 +181,8 @@ public:
 
 	shared_ptr<Ty>& lock();
 
-public:
+private:
+
 	Ty_Ptr ptr_;
 	size_t* count_;
 

@@ -173,26 +173,31 @@ shared_ptr<Ty>::shared_ptr(Ty_Ptr _pointer) :
 }
 
 template <typename Ty>
-shared_ptr<Ty>::shared_ptr(unique_ptr<Ty> unique) :
+shared_ptr<Ty>::shared_ptr(unique_ptr<Ty>&& _unique) :
 	shared_ptr(){
-	ptr_ = unique.get();
-	++(*count_);
+	auto _fancy = _unique.get();
+
+	if (_fancy) {
+		auto _Rx = new Ty(*_unique);
+		ptr_ = _Rx;
+		++(*count_);
+	}
+
+
+
 }
 
 template <typename Ty>
-shared_ptr<Ty>::shared_ptr(weak_ptr<Ty> weak) {
-	ptr_ = weak.ptr_;
-	count_ = weak.use_count();
-
+shared_ptr<Ty>::shared_ptr(const weak_ptr<Ty>& _weak) :
+	ptr_(_weak.ptr_),
+	count_(_weak.count_) {
 	++(*count_);
 }
 
 template <typename Ty>
 shared_ptr<Ty>::shared_ptr(const shared_ptr& _other) :
-	shared_ptr() {
-
-	ptr_ = _other.ptr_;
-	count_ = _other.count_;
+	ptr_(_other.ptr_),
+	count_(_other.count_) {
 	++(*count_);
 }
 
@@ -218,10 +223,8 @@ shared_ptr<Ty>& shared_ptr<Ty>::
 
 template <typename Ty>
 shared_ptr<Ty>::shared_ptr(shared_ptr&& _ref) noexcept :
-	shared_ptr(){
-
-	ptr_ = _ref.ptr_;
-	count_ = _ref.count_;
+	ptr_(_ref.ptr_),
+	count_(_ref.count_) {
 
 	_ref.ptr_ = nullptr;
 	_ref.count_ = nullptr;
@@ -249,7 +252,9 @@ shared_ptr<Ty>& shared_ptr<Ty>::
 template <typename Ty>
 shared_ptr<Ty>::~shared_ptr() {
 	if (get() == nullptr) {
-		(count_ != nullptr) && (delete count_);
+		if (count_ != nullptr) {
+			delete count_;
+		}
 		return;
 	}
 
@@ -307,17 +312,32 @@ void shared_ptr<Ty>::swap(shared_ptr& _rhs) noexcept {
 
 template <typename Ty>
 void shared_ptr<Ty>::reset() {
-	reset(nullptr);
+
+	if (use_count() == 1) {
+		delete get();
+		delete count_;
+	}
+	else {
+		--count_;
+	}
+	ptr_ = nullptr;
+	count_ = new size_t();
+	
 }
 
 template <typename Ty>
 void shared_ptr<Ty>::reset(Ty_Ptr _pointer) {
-	auto tmp(_pointer);
+	if (_pointer == nullptr) {
+		reset();
+	}
 
-	if(use_count() == 1) {
+	shared_ptr tmp(_pointer);
+	
+	if (use_count() == 1) {
 		delete get();
 		delete count_;
-	} else {
+	}
+	else {
 		--count_;
 	}
 
@@ -338,26 +358,22 @@ constexpr weak_ptr<Ty>::weak_ptr() noexcept :
 
 template <typename Ty>
 weak_ptr<Ty>::weak_ptr(const weak_ptr& _other) noexcept :
-	weak_ptr(){
-	ptr_ = _other.ptr;
-	count_ = _other.count_;
-}
+	ptr_(_other.ptr_),
+	count_(_other.count_){}
 
 template <typename Ty>
 weak_ptr<Ty>& weak_ptr<Ty>::
 	operator=(const weak_ptr& _other) noexcept {
-	ptr_ = _other.ptr;
+	ptr_ = _other.ptr_;
 	count_ = _other.count_;
 
 	return *this;
 }
 
 template <typename Ty>
-weak_ptr<Ty>::weak_ptr(const shared_ptr<Ty> shared_ptr) noexcept :
-	weak_ptr(){
-	ptr_ = shared_ptr.ptr_;
-	count_ = shared_ptr.count_;
-}
+weak_ptr<Ty>::weak_ptr(const shared_ptr<Ty>& _shared) noexcept :
+	ptr_(_shared.get()),
+	count_(_shared.count_){}
 
 template <typename Ty>
 weak_ptr<Ty>& weak_ptr<Ty>::operator=(weak_ptr&& _ref) noexcept{
@@ -372,9 +388,8 @@ weak_ptr<Ty>& weak_ptr<Ty>::operator=(weak_ptr&& _ref) noexcept{
 
 template <typename Ty>
 weak_ptr<Ty>::weak_ptr(weak_ptr&& _ref) noexcept :
-	weak_ptr(){
-	ptr_ = _ref.ptr_;
-	count_ = _ref.count_;
+	ptr_(_ref.ptr_),
+	count_(_ref.count_) {
 
 	_ref.ptr_ = nullptr;
 	_ref.count_ = nullptr;
